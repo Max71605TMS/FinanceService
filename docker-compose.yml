@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: finance-postgres
+    environment:
+      POSTGRES_DB: LOCAL_DB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1qw2
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: finance-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: finance-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-network
+
+  migrations:                                     
+    build:
+      context: .
+      dockerfile: MigrationService/Dockerfile
+    container_name: finance-migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=LOCAL_DB;Username=postgres;Password=1qw2
+    networks:
+      - finance-network
+
+  userservice:
+    build:
+      context: .
+      dockerfile: UserService/Dockerfile
+    container_name: finance-user
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - RabbitMQ__Host=rabbitmq
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=LOCAL_DB;Username=postgres;Password=1qw2
+    networks:
+      - finance-network
+
+  currencyservice:
+    build:
+      context: .
+      dockerfile: CurrencyService/Dockerfile
+    container_name: finance-currency
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - RabbitMQ__Host=rabbitmq
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=LOCAL_DB;Username=postgres;Password=1qw2
+    networks:
+      - finance-network
+
+  currencyupdater:
+    build:
+      context: .
+      dockerfile: CurrencyUpdater/Dockerfile
+    container_name: finance-updater
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=LOCAL_DB;Username=postgres;Password=1qw2
+    networks:
+      - finance-network
+
+  apigateway:
+    build:
+      context: .
+      dockerfile: FinanceApp/Dockerfile
+    container_name: finance-gateway
+    ports:
+      - "5000:8080"
+    depends_on:
+      - userservice
+      - currencyservice
+      - rabbitmq
+      - redis
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+    networks:
+      - finance-network
+
+networks:
+  finance-network:
+    driver: bridge
+    name: finance-network
