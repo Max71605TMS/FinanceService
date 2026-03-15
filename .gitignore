@@ -5,6 +5,13 @@ Version
 
 *.nupkg
 
+## Visual Studio temporary files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
 # User-specific files
 *.suo
 *.user
