@@ -20,6 +20,7 @@ namespace UserService.Infrastructure
 			services.AddScoped<IUserRepository, UserRepository>();
 			services.AddScoped<IUserActionService, UserActionService>();
 			services.AddScoped<IJwtGenerator, JwtGenerator>();
+			services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
 
 			return services;
 		}

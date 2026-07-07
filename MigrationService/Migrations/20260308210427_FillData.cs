@@ -15,9 +15,9 @@ namespace MigrationService.Migrations
 				columns: new[] { "ID", "NAME", "PASSWORD" },
 				values: new object[,]
 				{
-					{ 1, "ivan_ivanov", "1qw2" },
-                    { 2, "maria_sidorova", "qwerty" },
-					{ 3, "alexey_smirnov", "pass789" }
+					{ 1, "ivan_ivanov", "PBKDF2-SHA256$100000$yj34tAwo5xlf2IswFJdTDw==$PyqDE7Ty1x7eM9/szQ4ATT0KMiIJzPSMTf/L7Ivr8u4=" },
+                    { 2, "maria_sidorova", "PBKDF2-SHA256$100000$oZWGFKalAcJLQIv3wN4X7A==$DoJybWd9TAN2qrQWNkvdfJ2uVwwKBM5zPAJKioPkexc=" },
+					{ 3, "alexey_smirnov", "PBKDF2-SHA256$100000$L1sZSl9zcvAhrLt3+P8mIg==$5ulDsxv/6DHnww4O23qMWy5hI2mvBc7Y4OIeoUAJNHs=" }
 				});
             
 			migrationBuilder.Sql("SELECT setval('\"USERS_ID_seq\"', (SELECT MAX(\"ID\") FROM \"USERS\"));");

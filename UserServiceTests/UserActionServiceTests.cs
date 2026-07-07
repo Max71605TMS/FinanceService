@@ -17,18 +17,21 @@ namespace UserServiceTests
 		private readonly Mock<IUserRepository> _userRepositoryMock;
 		private readonly Mock<IJwtGenerator> _jwtGeneratorMock;
 		private readonly Mock<IDistributedCache> _cacheMock;
+		private readonly Mock<IPasswordHasher> _passwordHasherMock;
 		private readonly UserActionService _service;
 
 		public UserActionServiceTests()
 		{
 			_userRepositoryMock = new Mock<IUserRepository>();
 			_jwtGeneratorMock = new Mock<IJwtGenerator>();
-			_cacheMock = new Mock<IDistributedCache>();			
+			_cacheMock = new Mock<IDistributedCache>();
+			_passwordHasherMock = new Mock<IPasswordHasher>();
 
 			_service = new UserActionService(
 				_userRepositoryMock.Object,
 				_cacheMock.Object,          
-				_jwtGeneratorMock.Object);
+				_jwtGeneratorMock.Object,
+				_passwordHasherMock.Object);
 		}
 
 		[Fact]
@@ -36,10 +39,13 @@ namespace UserServiceTests
 		{
 			// Arrange
 			var name = "newuser";
-			var password = "password123"; 
+			var password = "password123";
+			var passwordHash = "PBKDF2-SHA256$100000$salt$hash";
 			
 			_userRepositoryMock.Setup(x => x.GetByNameAsync(name, It.IsAny<CancellationToken>()))
 				.ReturnsAsync((User?)null);
+			_passwordHasherMock.Setup(x => x.HashPassword(password))
+				.Returns(passwordHash);
 			
 			_userRepositoryMock.Setup(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
 				.ReturnsAsync(true); 
@@ -51,7 +57,7 @@ namespace UserServiceTests
 			result.Should().NotBeNull();
 			
 			_userRepositoryMock.Verify(x => x.AddAsync(
-				It.Is<User>(u => u.Name == name && u.Password == password),
+				It.Is<User>(u => u.Name == name && u.PasswordHash == passwordHash && u.PasswordHash != password),
 				It.IsAny<CancellationToken>()),
 				Times.Once);
 
@@ -69,11 +75,14 @@ namespace UserServiceTests
 			// Arrange
 			var name = "john";
 			var password = "pass123";
-			var user = new User(name, password);
+			var passwordHash = "PBKDF2-SHA256$100000$salt$hash";
+			var user = new User(name, passwordHash);
 			var token = "jwt_token";
 
 			_userRepositoryMock.Setup(x => x.GetByNameAsync(name, It.IsAny<CancellationToken>()))
 				.ReturnsAsync(user);
+			_passwordHasherMock.Setup(x => x.VerifyPassword(password, passwordHash))
+				.Returns(true);
 			_jwtGeneratorMock.Setup(x => x.GenerateToken(user))
 				.Returns(token);
 
@@ -98,10 +107,13 @@ namespace UserServiceTests
 			// Arrange
 			var name = "john";
 			var password = "wrongpass";
-			var user = new User(name, "correctpass");
+			var passwordHash = "PBKDF2-SHA256$100000$salt$hash";
+			var user = new User(name, passwordHash);
 
 			_userRepositoryMock.Setup(x => x.GetByNameAsync(name, It.IsAny<CancellationToken>()))
 				.ReturnsAsync(user);
+			_passwordHasherMock.Setup(x => x.VerifyPassword(password, passwordHash))
+				.Returns(false);
 
 			// Act & Assert
 			await Assert.ThrowsAsync<UnauthorizedException>(

@@ -37,7 +37,7 @@ namespace MigrationService
 				entity.HasKey(e => e.Id);
 				entity.Property(e => e.Id).HasColumnName("ID").ValueGeneratedOnAdd();
 				entity.Property(e => e.Name).HasColumnName("NAME").IsRequired().HasMaxLength(100);
-				entity.Property(e => e.Password).HasColumnName("PASSWORD").IsRequired().HasMaxLength(200);
+				entity.Property(e => e.PasswordHash).HasColumnName("PASSWORD").IsRequired().HasMaxLength(200);
 				entity.HasIndex(e => e.Name).IsUnique();
 			});
 

@@ -67,7 +67,7 @@ namespace MigrationService.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("NAME");
 
-                    b.Property<string>("Password")
+                    b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")

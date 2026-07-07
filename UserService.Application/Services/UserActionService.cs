@@ -12,22 +12,24 @@ namespace UserService.Application.Services
 		private readonly IUserRepository _userRepository;
 		private readonly IJwtGenerator _jwtGenerator;
 		private readonly IDistributedCache _cache;
-		
+		private readonly IPasswordHasher _passwordHasher;
 
 
 		public UserActionService(IUserRepository userRepository, 
 								 IDistributedCache cache,
-								 IJwtGenerator jwtGenerator)
+								 IJwtGenerator jwtGenerator,
+								 IPasswordHasher passwordHasher)
 		{
 			_userRepository = userRepository;
 			_jwtGenerator = jwtGenerator;
-			_cache = cache;			
+			_cache = cache;
+			_passwordHasher = passwordHasher;
 		}
 
 		public async Task<LoginResponse> LoginAsync(string username, string password, CancellationToken cancellationToken = default)
 		{
 			var user = await _userRepository.GetByNameAsync(username, cancellationToken);
-			if (user == null || password != user.Password)
+			if (user == null || !_passwordHasher.VerifyPassword(password, user.PasswordHash))
 			{				
 				throw new UnauthorizedException("Invalid username or password");
 			}
@@ -84,7 +86,7 @@ namespace UserService.Application.Services
 			var existingUser = await _userRepository.GetByNameAsync(username);
 
 			if (existingUser != null) return new RegisterUserResponse() { Success = false, Error = "User wit this login already exists" };
-			var user = new User(username, password);
+			var user = new User(username, _passwordHasher.HashPassword(password));
 			bool succsefullyAdded = await _userRepository.AddAsync(user);
 
 			return new RegisterUserResponse() { Success = succsefullyAdded };

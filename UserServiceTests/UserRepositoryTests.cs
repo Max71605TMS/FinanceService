@@ -48,7 +48,7 @@ namespace UserServiceTests
 			var savedUser = await _context.Users.FirstOrDefaultAsync(u => u.Name == "jane_doe");
 			savedUser.Should().NotBeNull();
 			savedUser.Name.Should().Be("jane_doe");
-			savedUser.Password.Should().Be("1qw21qw2");
+			savedUser.PasswordHash.Should().Be("1qw21qw2");
 		}
 
 		[Fact]
@@ -64,7 +64,7 @@ namespace UserServiceTests
 			// Assert
 			found.Should().NotBeNull();
 			found.Name.Should().Be("find_me");
-			found.Password.Should().Be("pass123");
+			found.PasswordHash.Should().Be("pass123");
 		}
 
 		[Fact]
@@ -136,7 +136,7 @@ namespace UserServiceTests
 			// Assert
 			found.Should().NotBeNull();
 			found.Name.Should().Be("user2");
-			found.Password.Should().Be("pass2");
+			found.PasswordHash.Should().Be("pass2");
 		}
 
 		public void Dispose()

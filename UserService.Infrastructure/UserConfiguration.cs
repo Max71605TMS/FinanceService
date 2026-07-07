@@ -20,7 +20,7 @@ namespace UserService.Infrastructure
 				.IsRequired()
 				.HasMaxLength(100);
 
-			builder.Property(u => u.Password)
+			builder.Property(u => u.PasswordHash)
 				.HasColumnName("PASSWORD")
 				.IsRequired()
 				.HasMaxLength(200);
